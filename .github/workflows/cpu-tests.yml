@@ -1,0 +1,66 @@
+name: cpu-config-tests
+
+# Scratch workflow (fork-only branch) to execute the CPU unit tests for PR #9542
+# on a Linux runner. Not part of the pull request.
+
+on:
+  push:
+    branches: [ci/cpu-tests]
+  workflow_dispatch:
+
+jobs:
+  cpu-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          sudo docker image prune -af || true
+          df -h /
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install vLLM
+        run: |
+          python -m pip install -U pip
+          pip install --no-cache-dir "vllm==0.32.0"
+
+      - name: Install vLLM-Omni requirements
+        run: |
+          pip install --no-cache-dir -r requirements/cpu.txt
+          pip install --no-cache-dir "pytest==9.1.1" "pytest-asyncio==1.4.0" \
+            "pytest-cov==7.1.0" "pytest-mock==3.15.1" "pytest-shard==0.1.2" \
+            "pytest-xdist==3.8.0" "pytest-subtests==0.15.0" "websockets==16.1" \
+            "filelock>=3.16.1,<4" "datasets==3.6.0" psutil
+
+      - name: Show environment
+        run: |
+          python -c "import vllm, torch; print('vllm', vllm.__version__, 'torch', torch.__version__)"
+          df -h /
+
+      - name: Resolver + config unit tests
+        env:
+          HF_HUB_OFFLINE: "1"
+        run: |
+          python -m pytest -q tests/diffusion/diffusion_kv/test_config.py -m "core_model and cpu" -p no:cacheprovider
+
+      - name: Omni config tests
+        env:
+          HF_HUB_OFFLINE: "1"
+        run: |
+          python -m pytest -q tests/config/test_omni_config.py -m "core_model and cpu" -p no:cacheprovider
+
+      - name: Baseline on the merge base (platform-only failures)
+        if: always()
+        continue-on-error: true
+        env:
+          HF_HUB_OFFLINE: "1"
+        run: |
+          git fetch --depth=1 origin refs/heads/main
+          git checkout FETCH_HEAD
+          python -m pytest -q tests/config/test_omni_config.py -m "core_model and cpu" -p no:cacheprovider
