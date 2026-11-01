@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          ref: 4894773f2781175e2d1442a701fe8105c43ae62c
+          ref: dbea2d08b695a0e25ce79e8b0d2f4978ccddb265
 
       - name: Record the tested revision
         run: |
@@ -68,7 +68,7 @@ jobs:
         env:
           HF_HUB_OFFLINE: "1"
         run: |
-          git fetch --depth=1 origin refs/heads/main
+          git fetch --depth=1 https://github.com/vllm-project/vllm-omni.git refs/heads/main
           git checkout FETCH_HEAD
           git rev-parse HEAD
           python -m pytest -q tests/config/test_omni_config.py -m "core_model and cpu" -p no:cacheprovider
