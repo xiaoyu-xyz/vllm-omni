@@ -20,6 +20,13 @@ jobs:
           df -h /
 
       - uses: actions/checkout@v4
+        with:
+          ref: 4894773f2781175e2d1442a701fe8105c43ae62c
+
+      - name: Record the tested revision
+        run: |
+          git rev-parse HEAD
+          git log -1 --format='%s'
 
       - uses: actions/setup-python@v5
         with:
@@ -63,4 +70,5 @@ jobs:
         run: |
           git fetch --depth=1 origin refs/heads/main
           git checkout FETCH_HEAD
+          git rev-parse HEAD
           python -m pytest -q tests/config/test_omni_config.py -m "core_model and cpu" -p no:cacheprovider
