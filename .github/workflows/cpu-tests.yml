@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          ref: 47adaaf875d1b0d544774dfd668f5513a4744807
+          ref: 21b7c395ec927a208ee49bd104b097b6546024df
 
       - name: Record the tested revision
         run: |
